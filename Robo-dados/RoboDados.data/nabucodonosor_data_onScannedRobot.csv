@@ -1,0 +1,17 @@
+Time;Event;EnemyName;Energy;Distance;Bearing;Heading
+35;ScannedRobot;sample.Tracker;100,00;535,02;-22,55
+71;ScannedRobot;sample.Tracker;96,00;160,37;-36,46
+72;ScannedRobot;sample.Tracker;96,00;152,62;-37,19
+103;ScannedRobot;sample.Tracker;92,00;89,49;-143,21
+104;ScannedRobot;sample.Tracker;92,00;89,49;-143,21
+139;ScannedRobot;sample.Tracker;85,00;179,84;-162,66
+140;ScannedRobot;sample.Tracker;85,00;178,84;-162,68
+176;ScannedRobot;sample.Tracker;81,00;181,83;-170,61
+212;ScannedRobot;sample.Tracker;87,00;180,60;-174,54
+213;ScannedRobot;sample.Tracker;87,00;173,60;-174,53
+249;ScannedRobot;sample.Tracker;89,00;157,86;-176,82
+250;ScannedRobot;sample.Tracker;89,00;149,99;-176,82
+290;ScannedRobot;sample.Tracker;88,00;116,85;-177,49
+291;ScannedRobot;sample.Tracker;88,00;116,85;-177,49
+329;ScannedRobot;sample.Tracker;99,00;162,99;-178,55
+330;ScannedRobot;sample.Tracker;99,00;159,99;-178,55
