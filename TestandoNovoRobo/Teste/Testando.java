@@ -35,11 +35,13 @@ public class Testando extends AdvancedRobot {
         double bearingFromGun = Utils.normalRelativeAngleDegrees(absoluteBearing - getGunHeading());
         double bearingFromRadar = Utils.normalRelativeAngleDegrees(absoluteBearing - getRadarHeading());
         int atirou = 0;
+        double temeraturaArma = 0.0;
         setTurnRadarRight(bearingFromRadar);
 
         if (Math.abs(bearingFromGun) <= 2) {
             setTurnGunRight(bearingFromGun);
             if (getGunHeat() == 0) {
+                temeraturaArma=getGunHeat()
                 fire(Math.min(400 / e.getDistance(), 3));
                 atirou = 1;
             }
@@ -55,7 +57,7 @@ public class Testando extends AdvancedRobot {
         }
 
         setTurnRight(e.getBearing() + 90 - (15 * moveDirection));
-        salvarDados(arredondaValor(getGunHeat()), arredondaValor(Math.abs(bearingFromGun)), atirou);
+        salvarDados(arredondaValor(temeraturaArma), arredondaValor(Math.abs(bearingFromGun)), atirou);
         execute();
     }
 
