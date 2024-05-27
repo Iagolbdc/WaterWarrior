@@ -6,22 +6,14 @@ import java.io.*;
 
 public class Testando extends AdvancedRobot {
     private double moveDirection = 1;
-    private PrintWriter csvAtaque;
+    private double[] coeficientes = {-6.77, -1.71}; 
+    private double intercepto = 2.57; 
 
     public void run() {
         setColors(Color.RED, Color.BLACK, Color.YELLOW); // Body, Gun, Radar
         setAdjustRadarForRobotTurn(true);
         setAdjustGunForRobotTurn(true);
         setAdjustRadarForGunTurn(true);
-
-        try{
-			RobocodeFileOutputStream rfosAt = new RobocodeFileOutputStream(getDataFile("dados_ataque.csv"));
-			csvAtaque = new PrintWriter (new BufferedWriter(new OutputStreamWriter(rfosAt))); 
-			
-			csvAtaque.println("temperaturaArma,anguloArma,atirou");
-		} catch (IOException e){
-			e.printStackTrace();
-		}
 
         while (true) {
             setTurnRadarRight(Double.POSITIVE_INFINITY); // Keep turning radar
@@ -34,18 +26,22 @@ public class Testando extends AdvancedRobot {
         double absoluteBearing = getHeading() + e.getBearing();
         double bearingFromGun = Utils.normalRelativeAngleDegrees(absoluteBearing - getGunHeading());
         double bearingFromRadar = Utils.normalRelativeAngleDegrees(absoluteBearing - getRadarHeading());
-        int atirou = 0;
-        double temeraturaArma = 0.0;
         setTurnRadarRight(bearingFromRadar);
 
-        if (Math.abs(bearingFromGun) <= 2) {
+        double temperaturaArma = getGunHeat();
+        double anguloDaArma = bearingFromGun;
+
+        double[] features = {temperaturaArma, anguloDaArma};
+
+        double predict = predictMovement(features);
+        if (predict <= 0.5) {
             setTurnGunRight(bearingFromGun);
-            if (getGunHeat() == 0) {
-                temeraturaArma=getGunHeat()
+            if (temperaturaArma == 0) {
                 fire(Math.min(400 / e.getDistance(), 3));
-                atirou = 1;
             }
-        } else {
+        }
+
+        if(!(Math.abs(bearingFromGun) <= 2)) {
             setTurnGunRight(bearingFromGun);
         }
 
@@ -57,7 +53,6 @@ public class Testando extends AdvancedRobot {
         }
 
         setTurnRight(e.getBearing() + 90 - (15 * moveDirection));
-        salvarDados(arredondaValor(temeraturaArma), arredondaValor(Math.abs(bearingFromGun)), atirou);
         execute();
     }
 
@@ -78,52 +73,46 @@ public class Testando extends AdvancedRobot {
     }
 
     private void move() {
-        double x = getX();
-        double y = getY();
-        double battlefieldWidth = getBattleFieldWidth();
-        double battlefieldHeight = getBattleFieldHeight();
-        double margin = 60; // Distance from the wall
+    double x = getX();
+    double y = getY();
+    double battlefieldWidth = getBattleFieldWidth();
+    double battlefieldHeight = getBattleFieldHeight();
+    double margin = 60; // Distância da parede
+    double heading = getHeading();
 
-        // Check if the robot is too close to the walls and adjust
-        if (x <= margin) {
-            setTurnRight(Utils.normalRelativeAngleDegrees(90 - getHeading())); // Turn right
-            setAhead(100);
-        } else if (x >= battlefieldWidth - margin) {
-            setTurnRight(Utils.normalRelativeAngleDegrees(270 - getHeading())); // Turn left
-            setAhead(100);
-        } else if (y <= margin) {
-            setTurnRight(Utils.normalRelativeAngleDegrees(180 - getHeading())); // Turn around
-            setAhead(100);
-        } else if (y >= battlefieldHeight - margin) {
-            setTurnRight(Utils.normalRelativeAngleDegrees(0 - getHeading())); // Continue moving
+    // Verifica se está próximo da parede em tempo real e ajusta a direção
+    if (x <= margin || x >= battlefieldWidth - margin ||
+            y <= margin || y >= battlefieldHeight - margin) {
+        // Evita que fique preso nos cantos
+        if ((x <= margin && y <= margin) || (x <= margin && y >= battlefieldHeight - margin) ||
+                (x >= battlefieldWidth - margin && y <= margin) || (x >= battlefieldWidth - margin && y >= battlefieldHeight - margin)) {
+            setTurnRight(45); // Vira para tentar sair do canto
             setAhead(100);
         } else {
-            setAhead(100 * moveDirection); // Move forward normally
+            // Ajusta a direção gradualmente
+            double angleToCenter = Math.toDegrees(Math.atan2(battlefieldHeight / 2 - y, battlefieldWidth / 2 - x));
+            setTurnRight(Utils.normalRelativeAngleDegrees(angleToCenter - heading));
+            setAhead(100);
         }
+    } else {
+        setAhead(100 * moveDirection); // Move para frente normalmente
+    }
+}
+
+    private double sigmoid(double z) { 			// Função Sigmoide
+        return 1.0 / (1.0 + Math.exp(-z));
     }
 
-    private double arredondaValor(double valor) {
-        return Math.round(Math.abs(valor) * 100.0) / 100.0;
-    }
-
-    private void salvarDados(double temperaturaArma, double anguloArma, int atirou) {
-        if(csvAtaque != null){
-			csvAtaque.println(temperaturaArma + "," + anguloArma + "," + atirou);
-          	csvAtaque.flush();
-		}
-    }
-
-    public void onDeath(DeathEvent event) {
-		if (csvAtaque != null) {
-            csvAtaque.close();
-            csvAtaque = null; // Libera o recurso
+    private double dotProduct(double[] a, double[] b) {		// Produto Escalar
+        double resultado = 0.0;
+        for (int i = 0; i < a.length; i++) {
+            resultado += a[i] * b[i];
         }
+        return resultado;
     }
 
-    public void onWin(WinEvent event) {
-        if (csvAtaque != null) {
-            csvAtaque.close();
-            csvAtaque = null; // Libera o recurso
-        }
+    private double predictMovement(double[] features) {		// Previsão de movimento
+        double z = dotProduct(features, coeficientes) + intercepto;
+        return sigmoid(z);
     }
 }
