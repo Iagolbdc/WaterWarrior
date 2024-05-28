@@ -13,7 +13,7 @@ public class Testando extends AdvancedRobot {
     private static final double DISTANCIA_SEGURA_PAREDE = 100;
 
     public void run() {
-        setColors(Color.RED, Color.BLACK, Color.YELLOW); // Corpo, Arma, Radar
+        setColors(Color.BLUE, Color.ORANGE, Color.ORANGE); // Corpo, Arma, Radar
         ajustarConfiguracoes();
 
         while (true) {
