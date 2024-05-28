@@ -6,18 +6,18 @@ import robocode.util.Utils;
 
 public class Testando extends AdvancedRobot {
     private double direcaoMovimento = 1;
-    private double[] coeficientes = {-6.77, -1.71};
-    private double intercepto = 2.57;
+    private double[] coeficientesDeAtaque = {-6.77, -1.71}; // Pesos das caracteristicas para a previsão de ataque. Ou seja é a importancia que cada caracteristica possui na previsão.
+    private double interceptoDeAtaque = 2.57; // É o valor que permite ajustar a posição da fronteira de decisão da função de regressão logística
     private long ultimoTempoColisao = 0;
-    private static final long TEMPO_MAXIMO_COLISAO = 2000; // Tempo limite entre colisões
+    private static final long TEMPO_MAXIMO_COLISAO = 2000; 
     private static final double DISTANCIA_SEGURA_PAREDE = 100;
 
     public void run() {
-        setColors(Color.BLUE, Color.ORANGE, Color.ORANGE); // Corpo, Arma, Radar
+        setColors(Color.BLUE, Color.ORANGE, Color.ORANGE);
         ajustarConfiguracoes();
 
         while (true) {
-            setTurnRadarRight(Double.POSITIVE_INFINITY); // Mantém o radar girando
+            setTurnRadarRight(Double.POSITIVE_INFINITY); 
             mover();
             execute();
         }
@@ -27,21 +27,22 @@ public class Testando extends AdvancedRobot {
         double anguloAbsoluto = getHeading() + e.getBearing();
         double anguloArma = Utils.normalRelativeAngleDegrees(anguloAbsoluto - getGunHeading());
         double anguloRadar = Utils.normalRelativeAngleDegrees(anguloAbsoluto - getRadarHeading());
-        setTurnRadarRight(anguloRadar);
-
         double temperaturaArma = getGunHeat();
-        double anguloDaArma = anguloArma;
-
-        double[] caracteristicas = {temperaturaArma, anguloDaArma};
-
-        double previsao = preverMovimento(caracteristicas);
-        if (previsao <= 0.5) {
-            setTurnGunRight(anguloArma);
-            fire(Math.min(400 / e.getDistance(), 3));
-        }
-
+        setTurnRadarRight(anguloRadar);
+        
         if (!(Math.abs(anguloArma) <= 2)) {
             setTurnGunRight(anguloArma);
+        }
+
+        // Cria as caracteristicas para mandar pro matodo de previsão de movimento.
+        double[] caracteristicas = {temperaturaArma, anguloArma};
+
+        // Evia as caracteristicas para realizar a previsão se o robo vai ou não atirar.
+        double previsao = preverMovimento(caracteristicas);
+        // Se a minha previsão de ataque for maior ou igual a 0.5 o robo ataca.
+        if (previsao >= 0.5) {
+            setTurnGunRight(anguloArma);
+            fire(Math.min(400 / e.getDistance(), 3));
         }
 
         if (e.getDistance() > 150) {
@@ -84,7 +85,7 @@ public class Testando extends AdvancedRobot {
         if (estaProximoParede()) {
             evitarParede();
         } else {
-            setAhead(100 * direcaoMovimento); // Move para frente normalmente
+            setAhead(100 * direcaoMovimento);
         }
     }
 
@@ -106,10 +107,9 @@ public class Testando extends AdvancedRobot {
         double anguloAtual = getHeading();
 
         if (estaNoCanto(x, y, larguraCampo, alturaCampo)) {
-            setTurnRight(45); // Vira para tentar sair do canto
+            setTurnRight(45); 
             setAhead(100);
         } else {
-            // Ajusta a direção gradualmente
             double anguloParaCentro = Math.toDegrees(Math.atan2(alturaCampo / 2 - y, larguraCampo / 2 - x));
             setTurnRight(Utils.normalRelativeAngleDegrees(anguloParaCentro - anguloAtual));
             setAhead(100);
@@ -134,7 +134,7 @@ public class Testando extends AdvancedRobot {
 
     private void evitarParedeAoAproximarInimigo() {
         if (estaProximoParede()) {
-            setTurnRight(45); // Vira para tentar sair do canto
+            setTurnRight(45);
         }
     }
 
@@ -142,21 +142,27 @@ public class Testando extends AdvancedRobot {
         direcaoMovimento = -direcaoMovimento;
         setAhead(100 * direcaoMovimento);
     }
-
-    private double sigmoid(double z) { // Função Sigmoide
-        return 1.0 / (1.0 + Math.exp(-z));
-    }
-
-    private double preverMovimento(double[] caracteristicas) { // Previsão de movimento
-        double z = produtoEscalar(caracteristicas, coeficientes) + intercepto;
-        return sigmoid(z);
-    }
-
-    private double produtoEscalar(double[] a, double[] b) { // Produto Escalar
+    
+    // Metodo para combinar as caracteristicas com seu determinado coeficient(peso) gerando assim relevância entre as características.
+    private double produtoEscalar(double[] a, double[] b) { 
         double resultado = 0.0;
         for (int i = 0; i < a.length; i++) {
             resultado += a[i] * b[i];
         }
         return resultado;
+    }
+
+    // Função de ativação, aonde sera passada a junção das caracteristicas mais o intercepto, para transformar o resultado final em uma probabilidade entre 0 e 1. 
+    private double sigmoid(double z) { 
+        return 1.0 / (1.0 + Math.exp(-z));
+    }
+
+    // Método que de fato realiza a predição.
+    // Basicamente ele pega o resultado do valor final das caracteristicas(Já calculada com os seus coeficientes).
+    // Soma esse valor ao intercepto para ajustar a fronteira de decisão.
+    // Manda para a função de ativação(sigmoid) para transformar o resultado final em um valor entre 0 e 1.
+    private double preverMovimento(double[] caracteristicas) { 
+        double z = produtoEscalar(caracteristicas, coeficientesDeAtaque) + interceptoDeAtaque;
+        return sigmoid(z);
     }
 }
