@@ -35,7 +35,7 @@ public class Testando extends AdvancedRobot {
         double[] caracteristicas = {temperaturaArma, anguloDaArma};
 
         double previsao = preverMovimento(caracteristicas);
-        if (previsao <= 0.5 && temperaturaArma == 0) {
+        if (previsao <= 0.5) {
             setTurnGunRight(anguloArma);
             fire(Math.min(400 / e.getDistance(), 3));
         }
